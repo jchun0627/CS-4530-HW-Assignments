@@ -288,6 +288,65 @@ describe('CoveyTownController', () => {
       testingTown.updatePlayerLocation(player, newLocation);
       expect(mockListener.onConversationAreaUpdated).toHaveBeenCalledTimes(1);
     });
+    it('it should ensure that the onPlayerMoved method has been emited when the players location has been updated', async () => {
+      const newConversationArea = TestUtils.createConversationForTesting({
+        boundingBox: { x: 10, y: 10, height: 5, width: 5 },
+      });
+      const result = testingTown.addConversationArea(newConversationArea);
+      expect(result).toBe(true);
+
+      const mockListener = mock<CoveyTownListener>();
+      testingTown.addTownListener(mockListener);
+
+      const player = new Player(nanoid());
+      await testingTown.addPlayer(player);
+
+      const newLocation: UserLocation = {
+        moving: false,
+        rotation: 'front',
+        x: 25,
+        y: 25,
+        conversationLabel: newConversationArea.label,
+      };
+      testingTown.updatePlayerLocation(player, newLocation);
+      expect(mockListener.onPlayerMoved).toHaveBeenCalledTimes(1);
+    });
+    it('it should ensure that the conversationArea list reflects player transitions from conversationAreas', async () => {
+      const newConversationArea = TestUtils.createConversationForTesting({
+        boundingBox: { x: 10, y: 10, height: 5, width: 5 },
+      });
+      const result = testingTown.addConversationArea(newConversationArea);
+      expect(result).toBe(true);
+
+      const player = new Player(nanoid());
+      await testingTown.addPlayer(player);
+
+      const previousConversationAreaLabel = player.activeConversationArea.label;
+
+      const newLocation: UserLocation = {
+        moving: false,
+        rotation: 'front',
+        x: 25,
+        y: 25,
+        conversationLabel: newConversationArea.label,
+      };
+
+      testingTown.updatePlayerLocation(player, newLocation);
+
+      const foundPreviousConversationArea = testingTown.conversationAreas.find(
+        conversationArea => conversationArea.label === previousConversationAreaLabel,
+      );
+      expect(
+        foundPreviousConversationArea.occupantsByID.find(playerID => playerID === player.id),
+      ).toBeUndefined();
+
+      const foundNewConversationArea = testingTown.conversationAreas.find(
+        conversationArea => conversationArea.label === newConversationArea.label,
+      );
+      expect(
+        foundNewConversationArea.occupantsByID.find(playerID => playerID === player.id),
+      ).toEqual(player.id);
+    });
   });
   describe('destroySession', () => {
     let testingTown: CoveyTownController;
