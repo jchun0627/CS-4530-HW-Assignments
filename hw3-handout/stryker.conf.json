@@ -13,6 +13,7 @@
   "testRunner": "jest",
   "coverageAnalysis": "perTest",
   "timeoutFactor": 5,
+  "tempDirName": "strykerTmpDir",
   "timeoutMS": 15000,
   "mutate": [
     "src/lib/CoveyTownController.ts:123-126", 
