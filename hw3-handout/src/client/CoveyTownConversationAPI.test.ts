@@ -9,7 +9,10 @@ import CoveyTownsStore from '../lib/CoveyTownsStore';
 import addTownRoutes from '../router/towns';
 import * as requestHandlers from '../requestHandlers/CoveyTownRequestHandlers';
 import { createConversationForTesting } from './TestUtils';
-import TownsServiceClient, { ServerConversationArea } from './TownsServiceClient';
+import TownsServiceClient, { ConversationAreaCreateRequest, ServerConversationArea } from './TownsServiceClient';
+
+
+
 
 type TestTownData = {
   friendlyName: string;
@@ -21,6 +24,7 @@ type TestTownData = {
 describe('Create Conversation Area API', () => {
   let server: http.Server;
   let apiClient: TownsServiceClient;
+
 
   async function createTownForTesting(
     friendlyNameToUse?: string,
@@ -52,6 +56,8 @@ describe('Create Conversation Area API', () => {
     const address = server.address() as AddressInfo;
 
     apiClient = new TownsServiceClient(`http://127.0.0.1:${address.port}`);
+
+
   });
   afterAll(async () => {
     await server.close();
@@ -68,7 +74,25 @@ describe('Create Conversation Area API', () => {
       sessionToken: testingSession.coveySessionToken,
     });
   });
+  it('ensures that the error message is stated and the HTTP status codes are correctly matched', async () => {
+    const mockConversationAreaCreateHandler = jest.spyOn(requestHandlers, 'conversationAreaCreateHandler');
+    mockConversationAreaCreateHandler.mockImplementationOnce(() => {throw new Error('Error in the Mock Test');});
+    const testingTown = await createTownForTesting(undefined, true);
+    const testingSession = await apiClient.joinTown({
+      userName: nanoid(),
+      coveyTownID: testingTown.coveyTownID,
+    });
+    try {
+      await apiClient.createConversationArea({
+        conversationArea: createConversationForTesting(),
+        coveyTownID: testingTown.coveyTownID,
+        sessionToken: testingSession.coveySessionToken });
+    } catch (e) {
+      expect((e as Error).toString()).toBe('Error: Request failed with status code 500');
+    }
+  });
 });
+
 describe('conversationAreaCreateHandler', () => {
 
   const mockCoveyTownStore = mock<CoveyTownsStore>();
